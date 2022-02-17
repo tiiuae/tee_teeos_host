@@ -20,7 +20,7 @@
 
 #define SEL4TTY "/dev/ttyRPMSG6"
 
-static int open_tty()
+static int open_tty(void)
 {
     int fd = 0;
     struct termios tty = {0};
@@ -132,7 +132,7 @@ int tty_req(struct tty_msg *tty)
     }
 
     /*Write message to TEE*/
-    if (write(tty_fd, tty->send_buf, tty->send_len) != tty->send_len)
+    if (write(tty_fd, tty->send_buf, tty->send_len) != (ssize_t)tty->send_len)
     {
         printf("Writing request failed (%d)\n", errno);
         err = -EIO;

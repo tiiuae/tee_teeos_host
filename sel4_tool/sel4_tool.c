@@ -51,7 +51,7 @@ static void hexdump(void* data, size_t size)
 {
     char ascii[17] = { 0 };
 
-    for (int i = 0; i < size; ++i)
+    for (unsigned int i = 0; i < size; ++i)
     {
         printf("%02X ", ((unsigned char*)data)[i]);
         if (((unsigned char*)data)[i] >= ' ' && ((unsigned char*)data)[i] <= '~')
@@ -95,7 +95,7 @@ static void print_menu(void)
     printf("\n");
 }
 
-static int handle_unknown_request()
+static int handle_unknown_request(void)
 {
     ssize_t ret;
 
@@ -171,7 +171,7 @@ static int handle_invalid_msg_len(int32_t send_len, uint32_t recv_len, uint32_t 
 
     resp = (struct ree_tee_status_resp*)tty.recv_buf;
 
-    if (resp->hdr.status != recv_status)
+    if (resp->hdr.status != (int32_t)recv_status)
     {
         printf("ERROR invalid error code: %d\n", resp->hdr.status);
         ret = -EFAULT;
@@ -187,7 +187,7 @@ out:
     return ret;
 }
 
-static int handle_status_request()
+static int handle_status_request(void)
 {
     ssize_t ret;
 
@@ -339,7 +339,7 @@ static int handle_snvm_read(int page, uint8_t *key, uint8_t *output, int mode)
     else
     {
         printf("\nsNVM page %d data:", page);
-        for(int i = 0; i < resp->snvm_length; i++) {
+        for(unsigned int i = 0; i < resp->snvm_length; i++) {
             printf("%2.2x ", resp->data[i]);
         }
     }
@@ -596,7 +596,7 @@ static int handle_publick_key_extraction_request(struct key_data_blob *input_blo
 
     ret_cmd = (struct ree_tee_pub_key_resp_cmd*)tty.recv_buf;
 
-    if (ret < sizeof(struct ree_tee_pub_key_resp_cmd))
+    if (ret < (ssize_t)sizeof(struct ree_tee_pub_key_resp_cmd))
     {
         printf("Invalid msg size: %ld, type: %d, status: %d, hdr_len: %d\n",
                ret, ret_cmd->hdr.msg_type, ret_cmd->hdr.status,
@@ -707,6 +707,7 @@ static int cmdline(int argc, char* argv[])
         goto out;
 
     case TOOL_CMD_EXPORT_KEY:
+    {
         printf("TOOL_CMD_EXPORT_KEY\n");
         if (!in_file)
         {
@@ -742,9 +743,9 @@ static int cmdline(int argc, char* argv[])
         hexdump(pubkey_bin, pubkey_len);
 
         ret = sel4_tool_save_file(out_file, pubkey_bin, pubkey_len);
-        goto out;
+    }
+    break;
 
-        break;
     case TOOL_CMD_READ_CRASHLOG:
         ret = sel4_read_crashlog(out_file);
         break;
@@ -850,7 +851,7 @@ int main(int argc, char* argv[])
     while (i)
     {
         print_menu();
-        scanf("%d", &choice);
+        ret = scanf("%d", &choice);
 
         switch (choice)
         {
@@ -862,16 +863,16 @@ int main(int argc, char* argv[])
             break;
         case 2:
             printf("\nEnter page to write: ");
-            scanf("%d", &page);
+            ret = scanf("%d", &page);
             printf("\nEnter mode (1 PLAIN, 0 SECURE): ");
-            scanf("%d", &mode);
+            ret = scanf("%d", &mode);
             ret = handle_snvm_write(test_data, tmp_key, page, mode);
         break;
         case 3:
             printf("\nEnter page to read: ");
-	        scanf("%d", &page);
+	        ret = scanf("%d", &page);
             printf("\nEnter mode (1 PLAIN, 0 SECURE): ");
-            scanf("%d", &mode);
+            ret = scanf("%d", &mode);
             ret = handle_snvm_read(page, tmp_key, NULL, mode);
         break;
         case 4:
@@ -881,7 +882,7 @@ int main(int argc, char* argv[])
         {
             uint8_t puf_challenge[PUF_CHALLENGE];
             printf("\nEnter opcode for PUF: ");
-	        scanf("%d", &page);
+	        ret = scanf("%d", &page);
             /*set device serial as puf challenge*/
             ret = handle_deviceid_request(puf_challenge);
             if (ret)
@@ -904,11 +905,11 @@ int main(int argc, char* argv[])
         {
             int format;
             printf("\nEnter format (1 RAW, 0 DER): ");
-            scanf("%d", &format);
+            ret = scanf("%d", &format);
             if (format)
-                handle_sign_request(RAW_FORMAT, tmp_hash, NULL);
+                ret = handle_sign_request(RAW_FORMAT, tmp_hash, NULL);
             else
-                handle_sign_request(DER_FORMAT, tmp_hash, NULL);
+                ret = handle_sign_request(DER_FORMAT, tmp_hash, NULL);
         }
         break;
         default:

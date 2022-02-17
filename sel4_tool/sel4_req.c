@@ -69,7 +69,7 @@ int sel4_req_key_creation(uint32_t format, uint32_t nbits, uint32_t clientid,
     if (ret < 0)
         goto out;
 
-    if (ret < sizeof(struct ree_tee_key_resp_cmd)) {
+    if (ret < (ssize_t)sizeof(struct ree_tee_key_resp_cmd)) {
         printf("Invalid msg size: %d\n", ret);
         ret = -EINVAL;
         goto out;
@@ -213,7 +213,7 @@ int sel4_req_key_import(struct key_data_blob *input_blob, uint32_t blob_size)
     if (ret < 0)
         goto out;
 
-    if (ret < sizeof(struct ree_tee_status_resp))
+    if (ret < (ssize_t)sizeof(struct ree_tee_status_resp))
     {
         printf("Invalid msg size: %ld\n", ret);
         ret = -EINVAL;
