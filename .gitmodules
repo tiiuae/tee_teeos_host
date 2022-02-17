@@ -1,0 +1,3 @@
+[submodule "optee_client"]
+	path = optee_client
+	url = ssh://gerrit.ssrc-tre.fi:29418/Platsec/optee_client
