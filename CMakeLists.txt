@@ -22,3 +22,5 @@ add_compile_options (
 )
 
 add_subdirectory(sel4_tool)
+
+add_subdirectory(optee_client)
