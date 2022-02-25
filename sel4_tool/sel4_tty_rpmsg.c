@@ -96,7 +96,7 @@ static int tty_read_resp(int tty_fd, struct tty_msg *tty)
 
         if (recv < 0)
         {
-            printf("ERROR: read: %d\n", errno);
+            printf("ERROR: read: %d, read_bytes: %ld\n", errno, read_bytes);
             err = -EBUSY;
             goto err_out;
         }
@@ -118,32 +118,42 @@ err_out:
 
 int tty_req(struct tty_msg *tty)
 {
-    int err = -1;
     int tty_fd = -1;
-    ssize_t recv = 0;
+    ssize_t ret = -1;
 
     struct ree_tee_hdr *hdr = NULL;
 
     tty_fd = open_tty();
     if (tty_fd <= 0)
     {
-        err = -EIO;
+        ret = -EIO;
         goto err_out;
     }
 
-    /*Write message to TEE*/
-    if (write(tty_fd, tty->send_buf, tty->send_len) != (ssize_t)tty->send_len)
-    {
-        printf("Writing request failed (%d)\n", errno);
-        err = -EIO;
-        goto err_out;
+    for (int i = 0; i < TTY_SEND_BUF_COUNT; i++) {
+        /* skip empty buffers */
+        if (tty->send[i].buf_len == 0 || !tty->send[i].buf) {
+            printf("tty req[%d]: buffer empty\n", i);
+            continue;
+        }
+
+        printf("tty req[%d], len: %ld\n", i, tty->send[i].buf_len);
+
+        /*Write message to TEE*/
+        ret = write(tty_fd, tty->send[i].buf, tty->send[i].buf_len);
+
+        if (ret != (ssize_t)tty->send[i].buf_len)
+        {
+            printf("Writing request failed (%d)\n", errno);
+            ret = -EIO;
+            goto err_out;
+        }
     }
 
     /* Recv TEE reply */
-    recv = tty_read_resp(tty_fd, tty);
-    if (recv < 0)
+    ret = tty_read_resp(tty_fd, tty);
+    if (ret < 0)
     {
-        err = recv;
         goto err_out;
     }
 
@@ -153,15 +163,15 @@ int tty_req(struct tty_msg *tty)
         hdr->status != TEE_OK)
     {
         printf("ERROR: header status: %d\n", hdr->status);
-        err = -EFAULT;
+        ret = -EFAULT;
         goto err_out;
     }
 
     if (tty->recv_len != SKIP_LEN_CHECK &&
-        tty->recv_len != recv)
+        tty->recv_len != ret)
     {
-        printf("ERROR: invalid msg len: %ld (%d)\n", recv, tty->recv_len);
-        err = -EFAULT;
+        printf("ERROR: invalid msg len: %ld (%d)\n", ret, tty->recv_len);
+        ret = -EFAULT;
         goto err_out;
     }
 
@@ -169,19 +179,19 @@ int tty_req(struct tty_msg *tty)
         tty->recv_msg != hdr->msg_type)
     {
         printf("ERROR: invalid msg type: %d (%d)\n", hdr->msg_type, tty->recv_msg);
-        err = -EFAULT;
+        ret = -EFAULT;
         goto err_out;
     }
 
-    return recv;
+    return ret;
 
 err_out:
     if (hdr) {
-        printf("recv hdr: type: %d, status: %d, len: %d\n", hdr->msg_type, hdr->status, hdr->length);
+        printf("tty recv hdr: type: %d, status: %d, len: %d\n", hdr->msg_type, hdr->status, hdr->length);
     }
 
     free(tty->recv_buf);
     tty->recv_buf = NULL;
 
-    return err;
+    return ret;
 }

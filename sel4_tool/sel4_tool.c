@@ -107,8 +107,10 @@ static int handle_unknown_request(void)
     };
 
     struct tty_msg tty = {
-        .send_buf = (void*)&cmd,
-        .send_len = cmd.hdr.length,
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
         .recv_buf = NULL,
         .recv_len = HDR_LEN,
         .recv_msg = invalid_type, /* expect to get invalid msg type also in response */
@@ -152,8 +154,10 @@ static int handle_invalid_msg_len(int32_t send_len, uint32_t recv_len, uint32_t 
     };
 
     struct tty_msg tty = {
-        .send_buf = (void*)&cmd,
-        .send_len = cmd.hdr.length,
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
         .recv_buf = NULL,
         .recv_len = recv_len,
         .recv_msg = REE_TEE_STATUS_RESP,
@@ -197,8 +201,10 @@ static int handle_status_request(void)
     };
 
     struct tty_msg tty = {
-        .send_buf = (void*)&cmd,
-        .send_len = cmd.hdr.length,
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
         .recv_buf = NULL,
         .recv_len = HDR_LEN,
         .recv_msg = REE_TEE_STATUS_RESP,
@@ -235,8 +241,10 @@ static int handle_snvm_write(uint8_t *input_data, uint8_t *key, int page, int mo
     };
 
     struct tty_msg tty = {
-        .send_buf = (void*)&cmd,
-        .send_len = cmd.hdr.length,
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
         .recv_buf = NULL,
         .recv_len = HDR_LEN,
         .recv_msg = REE_TEE_SNVM_WRITE_RESP,
@@ -297,8 +305,10 @@ static int handle_snvm_read(int page, uint8_t *key, uint8_t *output, int mode)
     };
 
     struct tty_msg tty = {
-        .send_buf = (void*)&cmd,
-        .send_len = cmd.hdr.length,
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
         .recv_buf = NULL,
         .recv_len = sizeof(cmd),
         .recv_msg = REE_TEE_SNVM_READ_RESP,
@@ -363,8 +373,10 @@ static int handle_puf_request(uint8_t opcode, uint8_t *challenge, uint8_t *outpu
     };
 
     struct tty_msg tty = {
-        .send_buf = (void*)&cmd,
-        .send_len = cmd.hdr.length,
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
         .recv_buf = NULL,
         .recv_len = sizeof(cmd),
         .recv_msg = REE_TEE_PUF_RESP,
@@ -414,8 +426,10 @@ static int handle_sign_request(uint8_t format, uint8_t *hash, uint8_t *output)
     };
 
     struct tty_msg tty = {
-        .send_buf = (void*)&cmd,
-        .send_len = cmd.hdr.length,
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
         .recv_buf = NULL,
         .recv_len = sizeof(cmd),
         .recv_msg = REE_TEE_SIGN_RESP,
@@ -463,8 +477,10 @@ static int handle_deviceid_request(uint8_t *output)
     };
 
     struct tty_msg tty = {
-        .send_buf = (void*)&cmd,
-        .send_len = cmd.hdr.length,
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
         .recv_buf = NULL,
         .recv_len = sizeof(cmd),
         .recv_msg = REE_TEE_DEVICEID_RESP,
@@ -514,8 +530,10 @@ static int handle_rng_request(uint8_t *output)
     };
 
     struct tty_msg tty = {
-        .send_buf = (void*)&cmd,
-        .send_len = cmd.hdr.length,
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
         .recv_buf = NULL,
         .recv_len = sizeof(cmd),
         .recv_msg = REE_TEE_RNG_RESP,
@@ -583,8 +601,8 @@ static int handle_publick_key_extraction_request(struct key_data_blob *input_blo
 
     memcpy(&cmd->data_in, input_blob, blob_size);
 
-    tty.send_buf = (void*)cmd;
-    tty.send_len = cmd->hdr.length;
+    tty.send[0].buf = (void*)cmd,
+    tty.send[0].buf_len = cmd->hdr.length,
     tty.recv_buf = NULL;
     tty.recv_len = SKIP_LEN_CHECK;
     tty.recv_msg = REE_TEE_EXT_PUBKEY_RESP;

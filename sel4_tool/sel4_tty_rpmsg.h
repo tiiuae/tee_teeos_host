@@ -17,9 +17,14 @@
 #define SKIP_TEE_OK_CHECK   0
 #define VERIFY_TEE_OK       1
 
+struct tty_send_buf {
+    char *buf;
+    size_t buf_len;
+};
+
+#define TTY_SEND_BUF_COUNT  2
 struct tty_msg {
-    char *send_buf;
-    size_t send_len;
+    struct tty_send_buf send[TTY_SEND_BUF_COUNT];
 
     char *recv_buf;
     uint32_t recv_len;      /* expected response length (SKIP_LEN_CHECK) */

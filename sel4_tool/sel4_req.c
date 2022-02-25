@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include "sel4_tool_cmdline.h"
 
 #include "sel4_req.h"
 #include "sel4_circ.h"
@@ -49,8 +48,10 @@ int sel4_req_key_creation(uint32_t format, uint32_t nbits, uint32_t clientid,
     };
 
     struct tty_msg tty = {
-        .send_buf = (void *)&cmd,
-        .send_len = cmd.hdr.length,
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
         .recv_buf = NULL,
         .recv_len = SKIP_LEN_CHECK,
         .recv_msg = REE_TEE_GEN_KEY_RESP,
@@ -205,8 +206,8 @@ int sel4_req_key_import(struct key_data_blob *input_blob, uint32_t blob_size)
 
     memcpy(&cmd->data_in, input_blob, blob_size);
 
-    tty.send_buf = (void*)cmd;
-    tty.send_len = cmd->hdr.length;
+    tty.send[0].buf = (void*)&cmd,
+    tty.send[0].buf_len = cmd->hdr.length,
     tty.recv_buf = NULL;
     tty.recv_len = HDR_LEN;
     tty.recv_msg = REE_TEE_KEY_IMPORT_RESP;
