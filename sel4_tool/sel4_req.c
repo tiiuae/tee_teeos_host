@@ -234,3 +234,94 @@ out:
 
     return ret;
 }
+
+static int sel4_optee_invoke_ta(uint32_t ree_send_msg,
+                                uint32_t ree_recv_msg,
+                                uint32_t ta_cmd,
+                                char *params_in_out,
+                                uint32_t param_len,
+                                int32_t *tee_err)
+{
+    int ret = -1;
+
+    struct ree_tee_optee_cmd *ret_cmd = NULL;
+
+    struct ree_tee_optee_cmd cmd = {
+        .hdr.msg_type = ree_send_msg,
+        .hdr.length = sizeof(struct ree_tee_optee_cmd) + param_len,
+        .ta_cmd = ta_cmd,
+    };
+
+    struct tty_msg tty = {
+        .send = {
+            {
+                .buf = (void*)&cmd,
+                .buf_len = sizeof(struct ree_tee_optee_cmd)
+            },
+            {
+                .buf = params_in_out,
+                .buf_len = param_len
+            },
+        },
+        .recv_buf = NULL,
+        .recv_len = SKIP_LEN_CHECK,
+        .recv_msg = ree_recv_msg,
+        .status_check = SKIP_TEE_OK_CHECK,
+    };
+
+    printf("%s: send_msg: %d, recv_msg: %d, ta_cmd: %d\n", __FUNCTION__,
+            ree_send_msg, ree_recv_msg, ta_cmd);
+
+    ret = tty_req(&tty);
+    if (ret < 0)
+        goto out;
+
+    printf("%s: recv: %d, param len: %ld\n", __FUNCTION__, ret,
+            ret - sizeof(struct ree_tee_optee_cmd));
+
+    ret_cmd = (struct ree_tee_optee_cmd *)tty.recv_buf;
+
+    if (ret_cmd->hdr.status != TEE_OK) {
+        printf("TEE error: %d", ret_cmd->hdr.status);
+        *tee_err = ret_cmd->hdr.status;
+        ret = -EFAULT;
+        goto out;
+    }
+
+    /* TA may send different size of params back, check it 
+     * fits to the allocated buffer
+     */
+    if (ret > (ssize_t)(sizeof(struct ree_tee_optee_cmd)) + param_len) {
+        printf("Invalid msg size: %d\n", ret);
+        ret = -EINVAL;
+        goto out;
+    }
+
+    memcpy(params_in_out, ret_cmd->params, param_len);
+
+    ret = 0;
+out:
+    free(tty.recv_buf);
+
+    return ret;
+}
+
+int sel4_optee_open_session(char *params_in_out, uint32_t param_len, int32_t *tee_err)
+{
+    return sel4_optee_invoke_ta(REE_TEE_OPTEE_OPEN_SESSION_REQ,
+                                REE_TEE_OPTEE_OPEN_SESSION_RESP,
+                                TA_CMD_NA,
+                                params_in_out,
+                                param_len,
+                                tee_err);
+}
+
+int sel4_optee_invoke_cmd(uint32_t ta_cmd, char *params_in_out, uint32_t param_len, int32_t *tee_err)
+{
+    return sel4_optee_invoke_ta(REE_TEE_OPTEE_INVOKE_CMD_REQ,
+                                REE_TEE_OPTEE_INVOKE_CMD_RESP,
+                                ta_cmd,
+                                params_in_out,
+                                param_len,
+                                tee_err);
+}
