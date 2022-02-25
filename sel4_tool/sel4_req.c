@@ -105,7 +105,7 @@ out:
     return ret;
 }
 
-int sel4_read_crashlog(const char *filename)
+int sel4_read_crashlog(char **crashlog, uint32_t *crashlog_len)
 {
     ssize_t ret = -1;
     int fd = 0;
@@ -121,20 +121,20 @@ int sel4_read_crashlog(const char *filename)
     if (!read_buf) {
         printf("ERROR: out of memory: %s: %d\n", __FUNCTION__, __LINE__);
         ret = -ENOMEM;
-        goto out;
+        goto err_out;
     }
 
-    if (!filename) {
+    if (!crashlog) {
         printf("ERROR params: %s: %d\n", __FUNCTION__, __LINE__);
         ret = -EINVAL;
-        goto out;
+        goto err_out;
     }
 
     fd = open(DEVMEM_HANDLE, O_RDWR);
     if (fd <= 0) {
         printf("failed to open %s: %d\n", DEVMEM_HANDLE, errno);
         ret = -EIO;
-        goto out;
+        goto err_out;
     }
 
     crashlog_area = mmap(NULL, CRASHLOG_SIZE, PROT_READ | PROT_WRITE,
@@ -143,7 +143,7 @@ int sel4_read_crashlog(const char *filename)
     if (crashlog_area == MAP_FAILED) {
         printf("ERROR: mmap: MAP_FAILED\n");
         ret = -EIO;
-        goto out;
+        goto err_out;
     }
 
     printf("crashlog_area: %p\n", crashlog_area);
@@ -156,17 +156,20 @@ int sel4_read_crashlog(const char *filename)
                               &dummy_lock);
     if (ret) {
         printf("ERROR: sel4_read_from_circ: %ld\n", ret);
-        goto out;
+        goto err_out;
     }
 
     printf("crashlog size: %d\n", read_len);
 
-    ret = sel4_tool_save_file(filename, (uint8_t *)read_buf, read_len);
-    if (ret) {
-        goto out;
-    }
 
-out:
+    *crashlog = read_buf;
+    *crashlog_len = read_len;
+
+    munmap(crashlog_area, CRASHLOG_SIZE);
+
+    return ret;
+
+err_out:
     munmap(crashlog_area, CRASHLOG_SIZE);
 
     free(read_buf);

@@ -650,8 +650,9 @@ static int cmdline(int argc, char* argv[])
     struct key_data_blob *blob = NULL;
     uint32_t blob_size = 0;
     uint8_t *pubkey_bin = NULL;
-    uint32_t pubkey_len = 0;
+    uint32_t len = 0;
     uint32_t nbits = 0;
+    char *crashlog = NULL;
 
     ret = sel4_tool_parse_opts(argc, argv, &in_file, &out_file, &tool_cmd);
     if (ret)
@@ -735,19 +736,28 @@ static int cmdline(int argc, char* argv[])
                                                     blob_size,
                                                     &nbits,
                                                     &pubkey_bin,
-                                                    &pubkey_len);
+                                                    &len);
         if (ret)
             goto out;
 
         printf("pubkey_bin\n");
-        hexdump(pubkey_bin, pubkey_len);
+        hexdump(pubkey_bin, len);
 
-        ret = sel4_tool_save_file(out_file, pubkey_bin, pubkey_len);
+        ret = sel4_tool_save_file(out_file, pubkey_bin, len);
     }
     break;
 
     case TOOL_CMD_READ_CRASHLOG:
-        ret = sel4_read_crashlog(out_file);
+        ret = sel4_read_crashlog(&crashlog, &len);
+        if (ret) {
+            goto out;
+        }
+
+        ret = sel4_tool_save_file(out_file, (uint8_t *)crashlog, len);
+        if (ret) {
+            goto out;
+        }
+
         break;
     case TOOL_CMD_IMPORT_KEY:
     {
@@ -830,6 +840,7 @@ out:
     free(out_file);
     free(blob);
     free(pubkey_bin);
+    free(crashlog);
 
     return ret;
 }

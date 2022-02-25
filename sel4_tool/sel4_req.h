@@ -12,6 +12,6 @@
 
 int sel4_req_key_creation(uint32_t format, uint32_t nbits, uint32_t clientid, const char *name, struct key_data_blob **output, uint32_t *output_len);
 int sel4_req_key_import(struct key_data_blob *input_blob, uint32_t blob_size);
-int sel4_read_crashlog(const char *filename);
+int sel4_read_crashlog(char **crashlog, uint32_t *crashlog_len);
 
 #endif /* _SEL4_REQ_H_ */
