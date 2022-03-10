@@ -19,7 +19,7 @@ struct serialized_param {
 int sel4_req_key_creation(uint32_t format, uint32_t nbits, uint32_t clientid, const char *name, struct key_data_blob **output, uint32_t *output_len);
 int sel4_req_key_import(struct key_data_blob *input_blob, uint32_t blob_size);
 int sel4_read_crashlog(char **crashlog, uint32_t *crashlog_len);
-int sel4_optee_open_session(char *params_in_out, uint32_t param_len, int32_t *tee_err);
-int sel4_optee_invoke_cmd(uint32_t ta_cmd, char *params_in_out, uint32_t param_len, int32_t *tee_err);
+int sel4_optee_open_session(char **params_in_out, uint32_t *in_out_len, int32_t *tee_err, uint32_t *ta_err);
+int sel4_optee_invoke_cmd(uint32_t ta_cmd, char **params_in_out, uint32_t *in_out_len, int32_t *tee_err, uint32_t *ta_err);
 
 #endif /* _SEL4_REQ_H_ */
