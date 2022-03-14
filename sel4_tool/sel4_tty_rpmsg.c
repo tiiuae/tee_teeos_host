@@ -76,7 +76,7 @@ static int tty_read_resp(int tty_fd, struct tty_msg *tty)
         goto err_out;
     }
 
-    printf("reply len: %d\n", recv_hdr.length);
+    printf("%s: reply len: %d\n", __FUNCTION__, recv_hdr.length);
 
     tty->recv_buf = malloc(recv_hdr.length);
     if (!tty->recv_buf)
@@ -133,11 +133,11 @@ int tty_req(struct tty_msg *tty)
     for (int i = 0; i < TTY_SEND_BUF_COUNT; i++) {
         /* skip empty buffers */
         if (tty->send[i].buf_len == 0 || !tty->send[i].buf) {
-            printf("tty req[%d]: buffer empty\n", i);
+            printf("%s: tty req[%d]: buffer empty\n", __FUNCTION__, i);
             continue;
         }
 
-        printf("tty req[%d], len: %ld\n", i, tty->send[i].buf_len);
+        printf("%s: tty req[%d], len: %ld\n", __FUNCTION__, i, tty->send[i].buf_len);
 
         /*Write message to TEE*/
         ret = write(tty_fd, tty->send[i].buf, tty->send[i].buf_len);
