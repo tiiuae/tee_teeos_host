@@ -16,6 +16,9 @@ enum tool_cmd {
     TOOL_CMD_EXPORT_KEY,
     TOOL_CMD_IMPORT_KEY,
     TOOL_CMD_READ_CRASHLOG,
+    TOOL_CMD_GENERATE_ECC,
+    TOOL_CMD_GENERATE_X25519,
+
 
     /* For testing/debug purposes */
     TOOL_CMD_TEST_STATUS,

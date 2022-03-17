@@ -120,6 +120,10 @@ static void print_usage(const char *prog_name)
     printf("    %s -o blob_file -c %d\n", prog_name, TOOL_CMD_GENERATE_RSA_PLAINTEXT);
     printf("\nTOOL_CMD_GENERATE_RSA_CIPHERED:\n");
     printf("    %s -o blob_file -c %d\n", prog_name, TOOL_CMD_GENERATE_RSA_CIPHERED);
+    printf("\nTOOL_CMD_GENERATE_ECC:\n");
+    printf("    %s -o blob_file -c %d\n", prog_name, TOOL_CMD_GENERATE_ECC);
+    printf("\nTOOL_CMD_GENERATE_X25519:\n");
+    printf("    %s -o blob_file -c %d\n", prog_name, TOOL_CMD_GENERATE_X25519);
     printf("\nTOOL_CMD_EXPORT_KEY:\n");
     printf("    %s -i blob_file -o export_file -c %d\n", prog_name, TOOL_CMD_EXPORT_KEY);
     printf("\nTOOL_CMD_IMPORT_KEY:\n");

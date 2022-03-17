@@ -764,7 +764,78 @@ static int cmdline(int argc, char* argv[])
         ret = sel4_tool_save_file(out_file, pubkey_bin, len);
     }
     break;
+    case TOOL_CMD_GENERATE_ECC:
+    {
+        format = KEY_ECC_KEYPAIR;
+        printf("TOOL_CMD_GENERATE_KEYS, format: %d\n", format);
+        if (!out_file)
+        {
+            printf("ERROR no out file defined\n");
+            ret = -EINVAL;
+            goto out;
+        }
 
+        printf("out_file: %s\n", out_file);
+
+        ret = sel4_req_key_creation(format,
+                                    256,
+                                    0xEEEEEEEE,
+                                    "ECC_keys",
+                                    &blob,
+                                    &blob_size);
+        if (ret)
+            goto out;
+
+        printf("Key data GUID:\n");
+        hexdump(blob->key_data_info.guid, 32);
+
+        printf("PubKey\n");
+        hexdump(&blob->key_data.keys[0], blob->key_data_info.pubkey_length);
+
+        printf("PrivateKey\n");
+        hexdump(&blob->key_data.keys[blob->key_data_info.pubkey_length], blob->key_data_info.privkey_length);
+
+        ret = sel4_tool_save_file(out_file, (uint8_t *)blob, blob_size);
+        goto out;
+
+    }
+    break;
+    case TOOL_CMD_GENERATE_X25519:
+    {
+        format = KEY_X25519_KEYPAIR;
+        printf("TOOL_CMD_GENERATE_KEYS, format: %d\n", format);
+        if (!out_file)
+        {
+            printf("ERROR no out file defined\n");
+            ret = -EINVAL;
+            goto out;
+        }
+
+        printf("out_file: %s\n", out_file);
+
+        ret = sel4_req_key_creation(format,
+                                    1, /* public key x509 format*/
+                                    0xEEEEEEEE,
+                                    "X25519_keys",
+                                    &blob,
+                                    &blob_size);
+        if (ret)
+            goto out;
+
+        printf("Key data GUID:\n");
+        hexdump(blob->key_data_info.guid, 32);
+
+        printf("PubKey\n");
+        hexdump(&blob->key_data.keys[0], blob->key_data_info.pubkey_length);
+
+        printf("PrivateKey\n");
+        hexdump(&blob->key_data.keys[blob->key_data_info.pubkey_length], blob->key_data_info.privkey_length);
+
+        ret = sel4_tool_save_file(out_file, (uint8_t *)blob, blob_size);
+        goto out;
+
+    }
+    break;
     case TOOL_CMD_READ_CRASHLOG:
         ret = sel4_read_crashlog(&crashlog, &len);
         if (ret) {
