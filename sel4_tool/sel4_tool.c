@@ -670,9 +670,10 @@ static int cmdline(int argc, char* argv[])
     uint8_t *pubkey_bin = NULL;
     uint32_t len = 0;
     uint32_t nbits = 0;
+    uint64_t debug_flags = 0;
     char *crashlog = NULL;
 
-    ret = sel4_tool_parse_opts(argc, argv, &in_file, &out_file, &tool_cmd);
+    ret = sel4_tool_parse_opts(argc, argv, &in_file, &out_file, &tool_cmd, &debug_flags);
     if (ret)
         goto out;
 
@@ -798,6 +799,12 @@ static int cmdline(int argc, char* argv[])
         ret = sel4_tool_save_file(out_file, (uint8_t *)blob, blob_size);
         goto out;
 
+    }
+    break;
+    case TOOL_CMD_DEBUG_FLAGS:
+    {
+        printf("Debug flags  0x%lx \n", debug_flags);
+        ret = sel4_req_debug_config(&debug_flags);
     }
     break;
     case TOOL_CMD_GENERATE_X25519:

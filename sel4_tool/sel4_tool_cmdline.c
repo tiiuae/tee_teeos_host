@@ -142,17 +142,19 @@ static void print_usage(const char *prog_name)
     printf("%s -c %d\n", prog_name, TOOL_CMD_TEST_INV_RECV_LEN);
     printf("TOOL_CMD_TEST_CHANGE_CLID:   ");
     printf("%s -i blob -o changed_blob -c %d\n", prog_name, TOOL_CMD_TEST_CHANGE_CLID);
+    printf("Set SEL4 debug flags:   ");
+    printf("%s -d <debug mask as a decimal number> \n", prog_name);
 
     printf("\n");
 }
 
-int sel4_tool_parse_opts(int argc, char* argv[], char **infile, char **outfile, uint32_t *cmd)
+int sel4_tool_parse_opts(int argc, char* argv[], char **infile, char **outfile, uint32_t *cmd, uint64_t *debug_flags)
 {
     int opt = 0;
 
     char *str_opt = NULL;
 
-    while ((opt = getopt(argc, argv, "i:o:c:")) != -1)
+    while ((opt = getopt(argc, argv, "i:o:c:f:")) != -1)
     {
         switch (opt) {
         case 'i':
@@ -180,7 +182,10 @@ int sel4_tool_parse_opts(int argc, char* argv[], char **infile, char **outfile, 
         case 'c':
             *cmd = atoi(optarg);
             break;
-
+        case 'f':
+            *cmd = TOOL_CMD_DEBUG_FLAGS;
+            *debug_flags = atoll(optarg);
+            break;
         default:
             print_usage(argv[0]);
             return -EPERM;

@@ -235,6 +235,54 @@ out:
     return ret;
 }
 
+int sel4_req_debug_config(uint64_t *debug_flags)
+{
+    ssize_t ret;
+
+    struct tty_msg tty = {0};
+
+    struct ree_tee_config_cmd *ret_cmd = NULL;
+    struct ree_tee_config_cmd cmd = {0};
+
+    uint32_t cmd_len = sizeof(struct ree_tee_config_cmd);
+
+    printf("cmd_len: %d\n", cmd_len);
+
+
+    cmd.hdr.msg_type = REE_TEE_CONFIG_REQ;
+    cmd.hdr.length = cmd_len;
+    cmd.debug_config = *debug_flags;
+
+
+
+    tty.send[0].buf = (void*)&cmd,
+    tty.send[0].buf_len = cmd.hdr.length,
+    tty.recv_buf = NULL;
+    tty.recv_len = cmd_len;
+    tty.recv_msg = REE_TEE_CONFIG_RESP;
+    tty.status_check = VERIFY_TEE_OK;
+
+    ret = tty_req(&tty);
+    if (ret < 0)
+        goto out;
+
+    if (ret < (ssize_t)sizeof(struct ree_tee_config_cmd))
+    {
+        printf("Invalid msg size: %ld\n", ret);
+        ret = -EINVAL;
+        goto out;
+    }
+
+    ret_cmd = (struct ree_tee_config_cmd*)tty.recv_buf;
+
+    ret = ret_cmd->hdr.status;
+    *debug_flags = ret_cmd->debug_config;
+    printf("Debug flag was %lu \n", *debug_flags);
+
+out:
+    return ret;
+}
+
 static int sel4_optee_invoke_ta(uint32_t optee_cmd,
                                 uint32_t ta_cmd,
                                 char **params_in_out,

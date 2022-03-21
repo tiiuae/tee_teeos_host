@@ -18,6 +18,7 @@ enum tool_cmd {
     TOOL_CMD_READ_CRASHLOG,
     TOOL_CMD_GENERATE_ECC,
     TOOL_CMD_GENERATE_X25519,
+    TOOL_CMD_DEBUG_FLAGS,
 
 
     /* For testing/debug purposes */
@@ -31,6 +32,6 @@ enum tool_cmd {
 
 int sel4_tool_load_file(const char *storage_path, uint8_t **storage, uint32_t *storage_len);
 int sel4_tool_save_file(const char *storage_path, uint8_t *storage, uint32_t storage_len);
-int sel4_tool_parse_opts(int argc, char* argv[], char **infile, char **outfile, uint32_t *cmd);
+int sel4_tool_parse_opts(int argc, char* argv[], char **infile, char **outfile, uint32_t *cmd, uint64_t *flags);
 
 #endif /* _SEL4_TOOL_CMDLINE_H_ */
