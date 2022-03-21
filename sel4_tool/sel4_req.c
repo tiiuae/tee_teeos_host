@@ -17,6 +17,7 @@
 #include "ree_tee_msg.h"
 #include "sel4_tty_rpmsg.h"
 
+#include "sel4_log.h"
 
 #define DEVMEM_HANDLE           "/dev/mem"  /* For reading crashmem */
 #define CRASHLOG_SIZE           0x2000      /* from devicetree */
@@ -59,7 +60,7 @@ int sel4_req_key_creation(uint32_t format, uint32_t nbits, uint32_t clientid,
     };
 
     if (!name || !output || !output_len) {
-        printf("ERROR params: %s: %d\n", __FUNCTION__, __LINE__);
+        SEL4LOGE("ERROR params: %s: %d\n", __FUNCTION__, __LINE__);
         ret = -EINVAL;
         goto out;
     }
@@ -71,25 +72,25 @@ int sel4_req_key_creation(uint32_t format, uint32_t nbits, uint32_t clientid,
         goto out;
 
     if (ret < (ssize_t)sizeof(struct ree_tee_key_resp_cmd)) {
-        printf("Invalid msg size: %d\n", ret);
+        SEL4LOGE("Invalid msg size: %d\n", ret);
         ret = -EINVAL;
         goto out;
     }
 
     ret_cmd = (struct ree_tee_key_resp_cmd *)tty.recv_buf;
 
-    printf("Pub Key length = %d, priv key length = %d\n",
+    SEL4LOGI("Pub Key length = %d, priv key length = %d\n",
            ret_cmd->key_blob.key_data_info.pubkey_length,
            ret_cmd->key_blob.key_data_info.privkey_length);
 
     size_t output_size = ret_cmd->key_blob.key_data_info.storage_size +
                          sizeof(struct ree_tee_key_info);
 
-    printf("Storage blob size = %lu\n", output_size);
+    SEL4LOGI("Storage blob size = %lu\n", output_size);
 
     *output = malloc(output_size);
     if (!*output) {
-        printf("Out of memory: %s: %d\n", __FUNCTION__, __LINE__);
+        SEL4LOGE("Out of memory: %s: %d\n", __FUNCTION__, __LINE__);
         ret = -ENOMEM;
         goto out;
     }
@@ -120,20 +121,20 @@ int sel4_read_crashlog(char **crashlog, uint32_t *crashlog_len)
     char *read_buf = malloc(CRASHLOG_SIZE);
 
     if (!read_buf) {
-        printf("ERROR: out of memory: %s: %d\n", __FUNCTION__, __LINE__);
+        SEL4LOGE("ERROR: out of memory: %s: %d\n", __FUNCTION__, __LINE__);
         ret = -ENOMEM;
         goto err_out;
     }
 
     if (!crashlog) {
-        printf("ERROR params: %s: %d\n", __FUNCTION__, __LINE__);
+        SEL4LOGE("ERROR params: %s: %d\n", __FUNCTION__, __LINE__);
         ret = -EINVAL;
         goto err_out;
     }
 
     fd = open(DEVMEM_HANDLE, O_RDWR);
     if (fd <= 0) {
-        printf("failed to open %s: %d\n", DEVMEM_HANDLE, errno);
+        SEL4LOGE("failed to open %s: %d\n", DEVMEM_HANDLE, errno);
         ret = -EIO;
         goto err_out;
     }
@@ -142,12 +143,12 @@ int sel4_read_crashlog(char **crashlog, uint32_t *crashlog_len)
                 MAP_SHARED, fd, CRASHLOG_PA);
 
     if (crashlog_area == MAP_FAILED) {
-        printf("ERROR: mmap: MAP_FAILED\n");
+        SEL4LOGE("ERROR: mmap: MAP_FAILED\n");
         ret = -EIO;
         goto err_out;
     }
 
-    printf("crashlog_area: %p\n", crashlog_area);
+    SEL4LOGI("crashlog_area: %p\n", crashlog_area);
 
     /* Setup ctrl struct for CIRC read */
     circ.hdr = (struct circ_buf_hdr *)crashlog_area;
@@ -156,11 +157,11 @@ int sel4_read_crashlog(char **crashlog, uint32_t *crashlog_len)
     ret = sel4_read_from_circ(&circ, CRASHLOG_SIZE, read_buf, &read_len,
                               &dummy_lock);
     if (ret) {
-        printf("ERROR: sel4_read_from_circ: %ld\n", ret);
+        SEL4LOGE("ERROR: sel4_read_from_circ: %ld\n", ret);
         goto err_out;
     }
 
-    printf("crashlog size: %d\n", read_len);
+    SEL4LOGI("crashlog size: %d\n", read_len);
 
 
     *crashlog = read_buf;
@@ -189,12 +190,12 @@ int sel4_req_key_import(struct key_data_blob *input_blob, uint32_t blob_size)
 
     uint32_t cmd_len = sizeof(struct ree_tee_hdr) + blob_size;
 
-    printf("cmd_len: %d\n", cmd_len);
+    SEL4LOGI("cmd_len: %d\n", cmd_len);
 
     cmd = malloc(cmd_len);
     if (!cmd)
     {
-        printf("ERROR: out of memory: %d\n", __LINE__);
+        SEL4LOGE("ERROR: out of memory: %d\n", __LINE__);
         ret = -ENOMEM;
         goto out;
     }
@@ -219,7 +220,7 @@ int sel4_req_key_import(struct key_data_blob *input_blob, uint32_t blob_size)
 
     if (ret < (ssize_t)sizeof(struct ree_tee_status_resp))
     {
-        printf("Invalid msg size: %ld\n", ret);
+        SEL4LOGE("Invalid msg size: %ld\n", ret);
         ret = -EINVAL;
         goto out;
     }
@@ -246,7 +247,7 @@ int sel4_req_debug_config(uint64_t *debug_flags)
 
     uint32_t cmd_len = sizeof(struct ree_tee_config_cmd);
 
-    printf("cmd_len: %d\n", cmd_len);
+    SEL4LOGI("cmd_len: %d\n", cmd_len);
 
 
     cmd.hdr.msg_type = REE_TEE_CONFIG_REQ;
@@ -268,7 +269,7 @@ int sel4_req_debug_config(uint64_t *debug_flags)
 
     if (ret < (ssize_t)sizeof(struct ree_tee_config_cmd))
     {
-        printf("Invalid msg size: %ld\n", ret);
+        SEL4LOGE("Invalid msg size: %ld\n", ret);
         ret = -EINVAL;
         goto out;
     }
@@ -277,7 +278,7 @@ int sel4_req_debug_config(uint64_t *debug_flags)
 
     ret = ret_cmd->hdr.status;
     *debug_flags = ret_cmd->debug_config;
-    printf("Debug flag was %lu \n", *debug_flags);
+    SEL4LOGI("Debug flag was %lu \n", *debug_flags);
 
 out:
     return ret;
@@ -323,14 +324,14 @@ static int sel4_optee_invoke_ta(uint32_t optee_cmd,
         .status_check = SKIP_TEE_OK_CHECK,
     };
 
-    printf("%s: optee_cmd: %d, ta_cmd: %d\n", __FUNCTION__, optee_cmd, ta_cmd);
+    SEL4LOGI("%s: optee_cmd: %d, ta_cmd: %d\n", __FUNCTION__, optee_cmd, ta_cmd);
 
     ret = tty_req(&tty);
     if (ret < 0)
         goto out;
 
     if (ret < (ssize_t)(sizeof(struct ree_tee_optee_cmd))) {
-        printf("Invalid msg size: %d\n", ret);
+        SEL4LOGE("Invalid msg size: %d\n", ret);
         ret = -EINVAL;
         goto out;
     }
@@ -340,7 +341,7 @@ static int sel4_optee_invoke_ta(uint32_t optee_cmd,
     *tee_err = resp->hdr.status;
     *ta_err = resp->cmd.ta_result;
 
-    printf("%s: recv: tee_err: %d, ta_err: 0x%x\n", __FUNCTION__, *tee_err, *ta_err);
+    SEL4LOGI("%s: recv: tee_err: %d, ta_err: 0x%x\n", __FUNCTION__, *tee_err, *ta_err);
 
     /* TEE error, no need to process TA params */
     if (*tee_err != TEE_OK) {
@@ -350,11 +351,11 @@ static int sel4_optee_invoke_ta(uint32_t optee_cmd,
 
     out_len = ret - (ssize_t)(sizeof(struct ree_tee_optee_cmd));
 
-    printf("%s: recv: %d, param len: %d\n", __FUNCTION__, ret, out_len);
+    SEL4LOGI("%s: recv: %d, param len: %d\n", __FUNCTION__, ret, out_len);
 
     params_out = malloc(out_len);
     if (!params_out) {
-        printf("out of memory\n");
+        SEL4LOGE("out of memory\n");
         ret = -ENOMEM;
         goto out;
     }
