@@ -393,6 +393,25 @@ int sel4_optee_open_session(char **params_in_out,uint32_t *in_out_len,
                                 ta_err);
 }
 
+int sel4_optee_close_session(char **params_in_out,uint32_t *in_out_len,
+                            int32_t *tee_err, uint32_t *ta_err)
+{
+    if (!params_in_out ||
+        !*params_in_out ||
+        !in_out_len ||
+        !tee_err ||
+        !ta_err) {
+        return -EINVAL;
+    }
+
+    return sel4_optee_invoke_ta(OPTEE_CLOSE_SESSION,
+                                TA_CMD_NA,
+                                params_in_out,
+                                in_out_len,
+                                tee_err,
+                                ta_err);
+}
+
 int sel4_optee_invoke_cmd(uint32_t ta_cmd, char **params_in_out, uint32_t *in_out_len, int32_t *tee_err, uint32_t *ta_err)
 {
     if (!params_in_out ||

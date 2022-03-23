@@ -20,6 +20,7 @@ int sel4_req_key_creation(uint32_t format, uint32_t nbits, uint32_t clientid, co
 int sel4_req_key_import(struct key_data_blob *input_blob, uint32_t blob_size);
 int sel4_read_crashlog(char **crashlog, uint32_t *crashlog_len);
 int sel4_optee_open_session(char **params_in_out, uint32_t *in_out_len, int32_t *tee_err, uint32_t *ta_err);
+int sel4_optee_close_session(char **params_in_out, uint32_t *in_out_len, int32_t *tee_err, uint32_t *ta_err);
 int sel4_optee_invoke_cmd(uint32_t ta_cmd, char **params_in_out, uint32_t *in_out_len, int32_t *tee_err, uint32_t *ta_err);
 int sel4_req_debug_config(uint64_t *debug_flags);
 
