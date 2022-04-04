@@ -926,6 +926,9 @@ static int cmdline(int argc, char* argv[])
         ret = sel4_tool_save_file(out_file, (uint8_t *)blob, blob_size);
         break;
 
+    case TOOL_CMD_OPTEE_INIT:
+        ret = sel4_optee_init();
+        break;
     default:
         printf("ERROR: unknown cmd: %d\n", tool_cmd);
         break;

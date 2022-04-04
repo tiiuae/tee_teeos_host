@@ -375,6 +375,41 @@ out:
     return ret;
 }
 
+int sel4_optee_init()
+{
+    ssize_t ret = -1;
+
+    struct ree_tee_status_req cmd = {
+        .hdr.msg_type = REE_TEE_OPTEE_INIT_REQ,
+        .hdr.length = HDR_LEN,
+    };
+
+    struct tty_msg tty = {
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length
+        },},
+        .recv_buf = NULL,
+        .recv_len = HDR_LEN,
+        .recv_msg = REE_TEE_OPTEE_INIT_RESP,
+        .status_check = VERIFY_TEE_OK,
+    };
+
+    ret = tty_req(&tty);
+    if (ret < 0)
+    {
+        SEL4LOGE("Status message failed: %ld \n", ret);
+        goto out;
+    }
+
+    ret = 0;
+
+out:
+    free(tty.recv_buf);
+
+    return ret;
+}
+
 int sel4_optee_open_session(char **params_in_out,uint32_t *in_out_len,
                             int32_t *tee_err, uint32_t *ta_err)
 {

@@ -130,7 +130,8 @@ static void print_usage(const char *prog_name)
     printf("    %s -i blob_file -c %d\n", prog_name, TOOL_CMD_IMPORT_KEY);
     printf("\nTOOL_CMD_READ_CRASHLOG:\n");
     printf("    %s -o crashlog_file -c %d\n", prog_name, TOOL_CMD_READ_CRASHLOG);
-
+    printf("\nTOOL_CMD_OPTEE_INIT:\n");
+    printf("    %s -c %d\n", prog_name, TOOL_CMD_OPTEE_INIT);
     printf("\nTesting / Debug commands:\n");
     printf("TOOL_CMD_TEST_STATUS:        ");
     printf("%s -c %d\n", prog_name, TOOL_CMD_TEST_STATUS);
@@ -142,7 +143,7 @@ static void print_usage(const char *prog_name)
     printf("%s -c %d\n", prog_name, TOOL_CMD_TEST_INV_RECV_LEN);
     printf("TOOL_CMD_TEST_CHANGE_CLID:   ");
     printf("%s -i blob -o changed_blob -c %d\n", prog_name, TOOL_CMD_TEST_CHANGE_CLID);
-    printf("Set SEL4 debug flags:   ");
+    printf("Set SEL4 debug flags:        ");
     printf("%s -d <debug mask as a decimal number> \n", prog_name);
 
     printf("\n");
