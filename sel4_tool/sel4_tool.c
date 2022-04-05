@@ -667,7 +667,7 @@ static int cmdline(int argc, char* argv[])
     uint32_t format = 0;
     struct key_data_blob *blob = NULL;
     uint32_t blob_size = 0;
-    uint8_t *pubkey_bin = NULL;
+    uint8_t *memory_buffer = NULL;
     uint32_t len = 0;
     uint32_t nbits = 0;
     uint64_t debug_flags = 0;
@@ -754,15 +754,15 @@ static int cmdline(int argc, char* argv[])
         ret = handle_publick_key_extraction_request(input,
                                                     blob_size,
                                                     &nbits,
-                                                    &pubkey_bin,
+                                                    &memory_buffer,
                                                     &len);
         if (ret)
             goto out;
 
         printf("pubkey_bin\n");
-        hexdump(pubkey_bin, len);
+        hexdump(memory_buffer, len);
 
-        ret = sel4_tool_save_file(out_file, pubkey_bin, len);
+        ret = sel4_tool_save_file(out_file, memory_buffer, len);
     }
     break;
     case TOOL_CMD_GENERATE_ECC:
@@ -929,6 +929,26 @@ static int cmdline(int argc, char* argv[])
     case TOOL_CMD_OPTEE_INIT:
         ret = sel4_optee_init();
         break;
+
+    case TOOL_CMD_OPTEE_EXPORT_STORAGE:
+        if (!out_file)
+        {
+            printf("ERROR no out file defined\n");
+            ret = -EINVAL;
+            goto out;
+        }
+
+        ret = sel4_optee_export_storage(&memory_buffer, &len);
+        if (ret)
+            goto out;
+
+        ret = sel4_tool_save_file(out_file, memory_buffer, len);
+        if (ret)
+            goto out;
+
+        printf("Exported OPTEE storage %d bytes\n", len);
+
+        break;
     default:
         printf("ERROR: unknown cmd: %d\n", tool_cmd);
         break;
@@ -938,7 +958,7 @@ out:
     free(in_file);
     free(out_file);
     free(blob);
-    free(pubkey_bin);
+    free(memory_buffer);
     free(crashlog);
 
     return ret;

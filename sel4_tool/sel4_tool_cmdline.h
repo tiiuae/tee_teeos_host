@@ -20,6 +20,7 @@ enum tool_cmd {
     TOOL_CMD_GENERATE_X25519,
     TOOL_CMD_DEBUG_FLAGS,
     TOOL_CMD_OPTEE_INIT,
+    TOOL_CMD_OPTEE_EXPORT_STORAGE,
 
     /* For testing/debug purposes */
     TOOL_CMD_TEST_STATUS,

@@ -465,3 +465,117 @@ int sel4_optee_invoke_cmd(uint32_t ta_cmd, char **params_in_out, uint32_t *in_ou
                                 tee_err,
                                 ta_err);
 }
+
+static int sel4_optee_export_storage_partial(uint8_t **export, uint32_t *export_len, uint32_t *storage_len, uint32_t offset)
+{
+    int ret = -1;
+    uint32_t payload_len = 0;
+
+    struct ree_tee_optee_storage_cmd cmd = {
+        .hdr.msg_type = REE_TEE_OPTEE_EXPORT_STORAGE_REQ,
+        .hdr.length = sizeof(struct ree_tee_optee_storage_cmd),
+        .storage.pos = offset,
+    };
+
+    struct ree_tee_optee_storage_cmd *resp = NULL;
+
+    struct tty_msg tty = {
+        .send = {{
+            .buf = (void*)&cmd,
+            .buf_len = cmd.hdr.length,
+        },},
+        .recv_buf = NULL,
+        .recv_len = SKIP_LEN_CHECK,
+        .recv_msg = REE_TEE_OPTEE_EXPORT_STORAGE_RESP,
+        .status_check = VERIFY_TEE_OK,
+    };
+
+    ret = tty_req(&tty);
+    if (ret < 0)
+        goto out;
+
+    if (ret < (ssize_t)sizeof(struct ree_tee_optee_storage_cmd)) {
+        SEL4LOGE("%s:%d: ERROR: Invalid msg size: %d\n", __FUNCTION__, __LINE__, ret);
+        ret = -EINVAL;
+        goto out;
+    }
+
+    resp = (struct ree_tee_optee_storage_cmd *)tty.recv_buf;
+    payload_len = resp->storage.payload_len;
+
+    SEL4LOGI("%s: offset: %d, payload_len: %d, storage_len: %d\n", __FUNCTION__, 
+        offset, payload_len, resp->storage.storage_len);
+
+    *export = malloc(payload_len);
+    if (!*export) {
+        SEL4LOGE("%s:%d: ERROR: out of memory\n", __FUNCTION__, __LINE__);
+        ret = -ENOMEM;
+        goto out;
+    }
+
+    memcpy(*export, resp->storage.payload, payload_len);
+    *export_len = payload_len;
+    *storage_len = resp->storage.storage_len;
+
+    ret = 0;
+out:
+    free(tty.recv_buf);
+
+    return ret;
+}
+
+int sel4_optee_export_storage(uint8_t **storage, uint32_t *storage_len)
+{
+    int ret = -1;
+    uint8_t *recv_buf = NULL;
+    uint8_t *partial = NULL;
+    uint32_t len = 0;
+    uint32_t export_len = 0;
+    uint32_t offset = 0;
+
+    if (!storage || !storage_len) {
+        SEL4LOGE("%s:%d: ERROR: params\n", __FUNCTION__, __LINE__);
+        return -EINVAL;
+    }
+
+    do {
+        ret = sel4_optee_export_storage_partial(&partial, &len, &export_len, offset);
+        if (ret) {
+            goto err_out;
+        }
+
+        recv_buf = realloc(recv_buf, offset + len);
+        if (!recv_buf)
+        {
+            SEL4LOGE("%s:%d: ERROR: out of memory\n", __FUNCTION__, __LINE__);
+            ret = -ENOMEM;
+            goto err_out;
+        }
+
+        memcpy(recv_buf + offset, partial, len);
+
+        offset += len;
+
+        free(partial);
+        partial = NULL;
+
+    } while (offset < export_len);
+
+    if (offset != export_len) {
+        SEL4LOGE("%s:%d: ERROR: invalid storage size: %d / %d\n", __FUNCTION__, __LINE__,
+            offset, export_len);
+        ret = -EFAULT;
+        goto err_out;
+    }
+
+    *storage = recv_buf;
+    *storage_len = export_len;
+
+    return 0;
+
+err_out:
+    free(partial);
+    free(recv_buf);
+
+    return ret;
+}

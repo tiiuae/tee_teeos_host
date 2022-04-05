@@ -132,6 +132,8 @@ static void print_usage(const char *prog_name)
     printf("    %s -o crashlog_file -c %d\n", prog_name, TOOL_CMD_READ_CRASHLOG);
     printf("\nTOOL_CMD_OPTEE_INIT:\n");
     printf("    %s -c %d\n", prog_name, TOOL_CMD_OPTEE_INIT);
+    printf("\nTOOL_CMD_OPTEE_EXPORT_STORAGE:\n");
+    printf("    %s -o optee_storage -c %d\n", prog_name, TOOL_CMD_OPTEE_EXPORT_STORAGE);
     printf("\nTesting / Debug commands:\n");
     printf("TOOL_CMD_TEST_STATUS:        ");
     printf("%s -c %d\n", prog_name, TOOL_CMD_TEST_STATUS);

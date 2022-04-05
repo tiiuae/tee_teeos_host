@@ -135,7 +135,7 @@ int tty_req(struct tty_msg *tty)
     for (int i = 0; i < TTY_SEND_BUF_COUNT; i++) {
         /* skip empty buffers */
         if (tty->send[i].buf_len == 0 || !tty->send[i].buf) {
-            SEL4LOGE("%s: tty req[%d]: buffer empty\n", __FUNCTION__, i);
+            SEL4LOGI("%s: tty req[%d]: buffer empty\n", __FUNCTION__, i);
             continue;
         }
 
@@ -146,7 +146,7 @@ int tty_req(struct tty_msg *tty)
 
         if (ret != (ssize_t)tty->send[i].buf_len)
         {
-            SEL4LOGE("Writing request failed (%d)\n", errno);
+            SEL4LOGE("Writing request failed (%d), (%ld / %ld)\n", errno, ret, tty->send[i].buf_len);
             ret = -EIO;
             goto err_out;
         }
