@@ -125,6 +125,11 @@ int tty_req(struct tty_msg *tty)
 
     struct ree_tee_hdr *hdr = NULL;
 
+    if (!tty) {
+        SEL4LOGE("ERROR: invalid parameters\n");
+        return -EINVAL;
+    }
+
     tty_fd = open_tty();
     if (tty_fd <= 0)
     {

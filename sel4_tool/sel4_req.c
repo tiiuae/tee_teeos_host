@@ -54,7 +54,7 @@ int sel4_read_crashlog(char **crashlog, uint32_t *crashlog_len)
         goto err_out;
     }
 
-    if (!crashlog) {
+    if (!crashlog || !crashlog_len) {
         SEL4LOGE("ERROR params: %s: %d\n", __FUNCTION__, __LINE__);
         ret = -EINVAL;
         goto err_out;
@@ -118,14 +118,16 @@ int sel4_req_debug_config(uint64_t *debug_flags)
 
     uint32_t cmd_len = sizeof(struct ree_tee_config_cmd);
 
-    SEL4LOGI("cmd_len: %d\n", cmd_len);
+    if (!debug_flags) {
+        SEL4LOGE("ERROR params: %s: %d\n", __FUNCTION__, __LINE__);
+        return -EINVAL;
+    }
 
+    SEL4LOGI("cmd_len: %d\n", cmd_len);
 
     cmd.hdr.msg_type = REE_TEE_CONFIG_REQ;
     cmd.hdr.length = cmd_len;
     cmd.debug_config = *debug_flags;
-
-
 
     tty.send[0].buf = (void*)&cmd,
     tty.send[0].buf_len = cmd.hdr.length,
