@@ -23,6 +23,7 @@ int sel4_optee_open_session(char **params_in_out, uint32_t *in_out_len, int32_t 
 int sel4_optee_close_session(char **params_in_out, uint32_t *in_out_len, int32_t *tee_err, uint32_t *ta_err);
 int sel4_optee_invoke_cmd(uint32_t ta_cmd, char **params_in_out, uint32_t *in_out_len, int32_t *tee_err, uint32_t *ta_err);
 int sel4_req_debug_config(uint64_t *debug_flags);
+int sel4_optee_init(uint8_t *storage, uint32_t storage_len);
 int sel4_optee_export_storage(uint8_t **storage, uint32_t *storage_len);
 
 #endif /* _SEL4_REQ_H_ */

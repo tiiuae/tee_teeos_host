@@ -23,6 +23,8 @@
 #define CRASHLOG_SIZE           0x2000      /* from devicetree */
 #define CRASHLOG_PA             0xA2450000  /* from devicetree */
 
+#define STORAGE_IMPORT_MSG_LEN  0x4000      /* 16kB */
+
 typedef int sync_spinlock_t; /* seL4 spinlock */
 
 /* memory structure in the beginning of crashlog area */
@@ -375,7 +377,74 @@ out:
     return ret;
 }
 
-int sel4_optee_init()
+static int sel4_optee_import_storage_partial(uint8_t *import, uint32_t import_len, uint32_t storage_len)
+{
+    int ret = -1;
+
+    uint32_t cmd_len = sizeof(struct ree_tee_optee_storage_cmd) + import_len;
+
+    struct ree_tee_optee_storage_cmd cmd =
+    {
+        .hdr.msg_type = REE_TEE_OPTEE_IMPORT_STORAGE_REQ,
+        .hdr.length = cmd_len,
+        .storage.payload_len = import_len,
+        .storage.storage_len = storage_len,
+    };
+
+    struct tty_msg tty = {
+        .send = {
+            {
+                .buf = (void*)&cmd,
+                .buf_len = sizeof(struct ree_tee_optee_storage_cmd)
+            },
+            {
+                .buf = (char *)import,
+                .buf_len = import_len,
+            },
+        },
+        .recv_buf = NULL,
+        .recv_len = HDR_LEN,
+        .recv_msg = REE_TEE_OPTEE_IMPORT_STORAGE_RESP,
+        .status_check = VERIFY_TEE_OK,
+    };
+
+    ret = tty_req(&tty);
+    if (ret < 0)
+        goto out;
+
+    ret = 0;
+out:
+    free(tty.recv_buf);
+
+    return ret;
+}
+
+static int optee_import_storage(uint8_t *storage, uint32_t storage_len)
+{
+    int ret = -1;
+    uint32_t pos = 0;
+    uint32_t import_len = 0;
+
+    do {
+        import_len = MIN(storage_len - pos, STORAGE_IMPORT_MSG_LEN);
+
+        ret = sel4_optee_import_storage_partial(storage + pos,
+                                                import_len,
+                                                storage_len);
+        if (ret) {
+            return ret;
+        }
+
+        pos += import_len;
+
+    } while (pos < storage_len);
+
+    SEL4LOGI("%s:%d: import complete: %d\n", __FUNCTION__, __LINE__, pos);
+
+    return 0;
+}
+
+static int sel4_optee_init_cmd(void)
 {
     ssize_t ret = -1;
 
@@ -406,6 +475,24 @@ int sel4_optee_init()
 
 out:
     free(tty.recv_buf);
+
+    return ret;
+}
+
+int sel4_optee_init(uint8_t *storage, uint32_t storage_len)
+{
+    int ret = -1;
+
+    if (storage && storage_len > 0) {
+        SEL4LOGI("optee: import storage\n");
+        ret = optee_import_storage(storage, storage_len);
+        if (ret)
+            return ret;
+    } else {
+        SEL4LOGI("optee: create an empty storage\n");
+    }
+
+    ret = sel4_optee_init_cmd();
 
     return ret;
 }
@@ -503,7 +590,7 @@ static int sel4_optee_export_storage_partial(uint8_t **export, uint32_t *export_
     resp = (struct ree_tee_optee_storage_cmd *)tty.recv_buf;
     payload_len = resp->storage.payload_len;
 
-    SEL4LOGI("%s: offset: %d, payload_len: %d, storage_len: %d\n", __FUNCTION__, 
+    SEL4LOGI("%s: offset: %d, payload_len: %d, storage_len: %d\n", __FUNCTION__,
         offset, payload_len, resp->storage.storage_len);
 
     *export = malloc(payload_len);

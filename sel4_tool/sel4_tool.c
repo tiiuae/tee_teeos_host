@@ -927,7 +927,15 @@ static int cmdline(int argc, char* argv[])
         break;
 
     case TOOL_CMD_OPTEE_INIT:
-        ret = sel4_optee_init();
+        if (in_file)
+        {
+            printf("Import secure storage\n");
+            ret = sel4_tool_load_file(in_file, &memory_buffer, &len);
+            if (ret)
+                goto out;
+        }
+
+        ret = sel4_optee_init(memory_buffer, len);
         break;
 
     case TOOL_CMD_OPTEE_EXPORT_STORAGE:
