@@ -116,18 +116,6 @@ static void print_usage(const char *prog_name)
     printf("    -o storage_path        Path to store storage blob\n");
     printf("    -c tool_cmd            Run sel4-tool cmd\n");
 
-    printf("\nTOOL_CMD_GENERATE_RSA_PLAINTEXT:\n");
-    printf("    %s -o blob_file -c %d\n", prog_name, TOOL_CMD_GENERATE_RSA_PLAINTEXT);
-    printf("\nTOOL_CMD_GENERATE_RSA_CIPHERED:\n");
-    printf("    %s -o blob_file -c %d\n", prog_name, TOOL_CMD_GENERATE_RSA_CIPHERED);
-    printf("\nTOOL_CMD_GENERATE_ECC:\n");
-    printf("    %s -o blob_file -c %d\n", prog_name, TOOL_CMD_GENERATE_ECC);
-    printf("\nTOOL_CMD_GENERATE_X25519:\n");
-    printf("    %s -o blob_file -c %d\n", prog_name, TOOL_CMD_GENERATE_X25519);
-    printf("\nTOOL_CMD_EXPORT_KEY:\n");
-    printf("    %s -i blob_file -o export_file -c %d\n", prog_name, TOOL_CMD_EXPORT_KEY);
-    printf("\nTOOL_CMD_IMPORT_KEY:\n");
-    printf("    %s -i blob_file -c %d\n", prog_name, TOOL_CMD_IMPORT_KEY);
     printf("\nTOOL_CMD_READ_CRASHLOG:\n");
     printf("    %s -o crashlog_file -c %d\n", prog_name, TOOL_CMD_READ_CRASHLOG);
     printf("\nTOOL_CMD_OPTEE_INIT:\n");
@@ -143,8 +131,6 @@ static void print_usage(const char *prog_name)
     printf("%s -c %d\n", prog_name, TOOL_CMD_TEST_INV_SEND_LEN);
     printf("TOOL_CMD_TEST_INV_RECV_LEN:  ");
     printf("%s -c %d\n", prog_name, TOOL_CMD_TEST_INV_RECV_LEN);
-    printf("TOOL_CMD_TEST_CHANGE_CLID:   ");
-    printf("%s -i blob -o changed_blob -c %d\n", prog_name, TOOL_CMD_TEST_CHANGE_CLID);
     printf("Set SEL4 debug flags:        ");
     printf("%s -d <debug mask as a decimal number> \n", prog_name);
 

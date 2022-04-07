@@ -11,13 +11,7 @@
 
 enum tool_cmd {
     TOOL_CMD_INVALID = 0,
-    TOOL_CMD_GENERATE_RSA_PLAINTEXT,
-    TOOL_CMD_GENERATE_RSA_CIPHERED,
-    TOOL_CMD_EXPORT_KEY,
-    TOOL_CMD_IMPORT_KEY,
     TOOL_CMD_READ_CRASHLOG,
-    TOOL_CMD_GENERATE_ECC,
-    TOOL_CMD_GENERATE_X25519,
     TOOL_CMD_DEBUG_FLAGS,
     TOOL_CMD_OPTEE_INIT,
     TOOL_CMD_OPTEE_EXPORT_STORAGE,
@@ -27,8 +21,6 @@ enum tool_cmd {
     TOOL_CMD_TEST_UNKNOWN_CMD,
     TOOL_CMD_TEST_INV_SEND_LEN,
     TOOL_CMD_TEST_INV_RECV_LEN,
-    TOOL_CMD_TEST_CHANGE_CLID,
-
 };
 
 int sel4_tool_load_file(const char *storage_path, uint8_t **storage, uint32_t *storage_len);
