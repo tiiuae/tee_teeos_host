@@ -27,7 +27,7 @@ add_compile_definitions(
 #	SEL4_PRINT_PARAM_MEMREF # sel4_serializer: print serialized memref contents
 	SEL4LOG_ERROR			# sel4_log
 #	SEL4LOG_INFO			# sel4_log
-	TRACE_PKCS11_API_CALLS 	# pkcs11_api.c
+#	TRACE_PKCS11_API_CALLS 	# pkcs11_api.c
 	_GNU_SOURCE				# F_OFD_SETLK
 )
 
