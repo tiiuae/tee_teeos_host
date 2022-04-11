@@ -34,6 +34,8 @@ struct tty_msg {
                              */
 };
 
-int tty_req(struct tty_msg *tty);
+int sel4_open_tty(void);
+void sel4_close_tty(int fd);
+int tty_req(int tty_fd, struct tty_msg *tty);
 
 #endif /* _SEL4_TTY_RPMSG_H_ */

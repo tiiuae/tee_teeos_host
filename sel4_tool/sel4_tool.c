@@ -31,7 +31,7 @@ static void print_menu(void)
     printf("\n");
 }
 
-static int handle_unknown_request(void)
+static int handle_unknown_request(int tee_fd)
 {
     ssize_t ret;
 
@@ -55,7 +55,7 @@ static int handle_unknown_request(void)
 
     struct ree_tee_status_resp *resp = NULL;
 
-    ret = tty_req(&tty);
+    ret = tty_req(tee_fd, &tty);
     if (ret < 0)
     {
         printf("Message failed: %ld \n", ret);
@@ -80,7 +80,7 @@ out:
     return ret;
 }
 
-static int handle_invalid_msg_len(int32_t send_len, uint32_t recv_len, uint32_t recv_status)
+static int handle_invalid_msg_len(int tee_fd, int32_t send_len, uint32_t recv_len, uint32_t recv_status)
 {
     ssize_t ret;
 
@@ -102,7 +102,7 @@ static int handle_invalid_msg_len(int32_t send_len, uint32_t recv_len, uint32_t 
 
     struct ree_tee_status_resp *resp = NULL;
 
-    ret = tty_req(&tty);
+    ret = tty_req(tee_fd, &tty);
     if (ret < 0)
     {
         printf("Message failed: %ld \n", ret);
@@ -127,7 +127,7 @@ out:
     return ret;
 }
 
-static int handle_status_request(void)
+static int handle_status_request(int tee_fd)
 {
     ssize_t ret;
 
@@ -149,7 +149,7 @@ static int handle_status_request(void)
 
     struct ree_tee_status_resp *resp = NULL;
 
-    ret = tty_req(&tty);
+    ret = tty_req(tee_fd, &tty);
     if (ret < 0)
     {
         printf("Status message failed: %ld \n", ret);
@@ -168,7 +168,7 @@ out:
     return ret;
 }
 
-static int handle_deviceid_request(uint8_t *output)
+static int handle_deviceid_request(int tee_fd, uint8_t *output)
 {
     ssize_t ret = -1;
     struct ree_tee_deviceid_cmd cmd ={
@@ -189,7 +189,7 @@ static int handle_deviceid_request(uint8_t *output)
 
     struct ree_tee_deviceid_cmd *resp = NULL;
 
-    ret = tty_req(&tty);
+    ret = tty_req(tee_fd, &tty);
     if (ret < 0)
     {
         printf("device id failed: %ld\n", ret);
@@ -220,7 +220,7 @@ out:
     return ret;
 }
 
-static int handle_rng_request(uint8_t *output)
+static int handle_rng_request(int tee_fd, uint8_t *output)
 {
     ssize_t ret;
 
@@ -242,7 +242,7 @@ static int handle_rng_request(uint8_t *output)
 
     struct ree_tee_rng_cmd *resp = NULL;
 
-    ret = tty_req(&tty);
+    ret = tty_req(tee_fd, &tty);
     if (ret < 0) {
         printf("rng request failed: %ld\n", ret);
         goto out;
@@ -273,7 +273,7 @@ out:
     return ret;
 }
 
-static int cmdline(int argc, char* argv[])
+static int cmdline(int tee_fd, int argc, char* argv[])
 {
     int ret = -1;
 
@@ -294,7 +294,7 @@ static int cmdline(int argc, char* argv[])
     case TOOL_CMD_DEBUG_FLAGS:
     {
         printf("Debug flags  0x%lx \n", debug_flags);
-        ret = sel4_req_debug_config(&debug_flags);
+        ret = sel4_req_debug_config(tee_fd, &debug_flags);
     }
     break;
     case TOOL_CMD_READ_CRASHLOG:
@@ -311,19 +311,19 @@ static int cmdline(int argc, char* argv[])
         break;
     case TOOL_CMD_TEST_STATUS:
         printf("TOOL_CMD_TEST_STATUS\n");
-        ret = handle_status_request();
+        ret = handle_status_request(tee_fd);
         break;
     case TOOL_CMD_TEST_UNKNOWN_CMD:
         printf("TOOL_CMD_TEST_UNKNOWN_CMD\n");
-        ret = handle_unknown_request();
+        ret = handle_unknown_request(tee_fd);
         break;
     case TOOL_CMD_TEST_INV_SEND_LEN:
         printf("TOOL_CMD_TEST_INV_SEND_LEN\n");
-        ret = handle_invalid_msg_len(HDR_LEN - 3, HDR_LEN, TEE_INVALID_MSG_SIZE);
+        ret = handle_invalid_msg_len(tee_fd, HDR_LEN - 3, HDR_LEN, TEE_INVALID_MSG_SIZE);
         break;
     case TOOL_CMD_TEST_INV_RECV_LEN:
         printf("TOOL_CMD_TEST_INV_RECV_LEN\n");
-        ret = handle_invalid_msg_len(HDR_LEN, HDR_LEN - 3, TEE_OK);
+        ret = handle_invalid_msg_len(tee_fd, HDR_LEN, HDR_LEN - 3, TEE_OK);
         break;
     case TOOL_CMD_OPTEE_INIT:
         if (in_file)
@@ -334,7 +334,7 @@ static int cmdline(int argc, char* argv[])
                 goto out;
         }
 
-        ret = sel4_optee_init(memory_buffer, len);
+        ret = sel4_optee_init(tee_fd, memory_buffer, len);
         break;
 
     case TOOL_CMD_OPTEE_EXPORT_STORAGE:
@@ -345,7 +345,7 @@ static int cmdline(int argc, char* argv[])
             goto out;
         }
 
-        ret = sel4_optee_export_storage(&memory_buffer, &len);
+        ret = sel4_optee_export_storage(tee_fd, &memory_buffer, &len);
         if (ret)
             goto out;
 
@@ -376,9 +376,16 @@ int main(int argc, char* argv[])
     int i = 1;
     int ret = 0;
 
+    int tee_fd = sel4_open_comm();
+    if (tee_fd < 0) {
+        printf("ERROR: seL4 comm: %d", tee_fd);
+        return tee_fd;
+    }
+
     if (argc > 1)
     {
-        ret = cmdline(argc, argv);
+        ret = cmdline(tee_fd, argc, argv);
+        sel4_close_comm(tee_fd);
         return ret;
     }
 
@@ -393,21 +400,22 @@ int main(int argc, char* argv[])
             i = 0;
             break;
         case 1:
-            ret = handle_rng_request(NULL);
+            ret = handle_rng_request(tee_fd, NULL);
             break;
         case 2:
-            ret = handle_deviceid_request(NULL);
+            ret = handle_deviceid_request(tee_fd, NULL);
         break;
         case 3:
-            ret = handle_status_request();
+            ret = handle_status_request(tee_fd);
         break;
         case 4:
-            ret = handle_unknown_request();
+            ret = handle_unknown_request(tee_fd);
         break;
         default:
         break;
         }
     }
 
+    sel4_close_comm(tee_fd);
     return ret;
 }

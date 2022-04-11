@@ -107,7 +107,7 @@ err_out:
     return ret;
 }
 
-int sel4_req_debug_config(uint64_t *debug_flags)
+int sel4_req_debug_config(int tee_fd, uint64_t *debug_flags)
 {
     ssize_t ret;
 
@@ -136,7 +136,7 @@ int sel4_req_debug_config(uint64_t *debug_flags)
     tty.recv_msg = REE_TEE_CONFIG_RESP;
     tty.status_check = VERIFY_TEE_OK;
 
-    ret = tty_req(&tty);
+    ret = tty_req(tee_fd, &tty);
     if (ret < 0)
         goto out;
 
@@ -157,7 +157,18 @@ out:
     return ret;
 }
 
-static int sel4_optee_invoke_ta(uint32_t optee_cmd,
+int sel4_open_comm()
+{
+    return sel4_open_tty();
+}
+
+void sel4_close_comm(int tee_fd)
+{
+    sel4_close_tty(tee_fd);
+}
+
+static int sel4_optee_invoke_ta(int tee_fd,
+                                uint32_t optee_cmd,
                                 uint32_t ta_cmd,
                                 char **params_in_out,
                                 uint32_t *in_out_len,
@@ -199,7 +210,7 @@ static int sel4_optee_invoke_ta(uint32_t optee_cmd,
 
     SEL4LOGI("%s: optee_cmd: %d, ta_cmd: %d\n", __FUNCTION__, optee_cmd, ta_cmd);
 
-    ret = tty_req(&tty);
+    ret = tty_req(tee_fd, &tty);
     if (ret < 0)
         goto out;
 
@@ -248,7 +259,9 @@ out:
     return ret;
 }
 
-static int sel4_optee_import_storage_partial(uint8_t *import, uint32_t import_len, uint32_t storage_len)
+static int sel4_optee_import_storage_partial(int tee_fd, uint8_t *import,
+                                             uint32_t import_len,
+                                             uint32_t storage_len)
 {
     int ret = -1;
 
@@ -279,7 +292,7 @@ static int sel4_optee_import_storage_partial(uint8_t *import, uint32_t import_le
         .status_check = VERIFY_TEE_OK,
     };
 
-    ret = tty_req(&tty);
+    ret = tty_req(tee_fd, &tty);
     if (ret < 0)
         goto out;
 
@@ -290,7 +303,7 @@ out:
     return ret;
 }
 
-static int optee_import_storage(uint8_t *storage, uint32_t storage_len)
+static int optee_import_storage(int tee_fd, uint8_t *storage, uint32_t storage_len)
 {
     int ret = -1;
     uint32_t pos = 0;
@@ -299,7 +312,8 @@ static int optee_import_storage(uint8_t *storage, uint32_t storage_len)
     do {
         import_len = MIN(storage_len - pos, STORAGE_IMPORT_MSG_LEN);
 
-        ret = sel4_optee_import_storage_partial(storage + pos,
+        ret = sel4_optee_import_storage_partial(tee_fd, 
+                                                storage + pos,
                                                 import_len,
                                                 storage_len);
         if (ret) {
@@ -315,7 +329,7 @@ static int optee_import_storage(uint8_t *storage, uint32_t storage_len)
     return 0;
 }
 
-static int sel4_optee_init_cmd(void)
+static int sel4_optee_init_cmd(int tee_fd)
 {
     ssize_t ret = -1;
 
@@ -335,7 +349,7 @@ static int sel4_optee_init_cmd(void)
         .status_check = VERIFY_TEE_OK,
     };
 
-    ret = tty_req(&tty);
+    ret = tty_req(tee_fd, &tty);
     if (ret < 0)
     {
         SEL4LOGE("Status message failed: %ld \n", ret);
@@ -350,25 +364,25 @@ out:
     return ret;
 }
 
-int sel4_optee_init(uint8_t *storage, uint32_t storage_len)
+int sel4_optee_init(int tee_fd, uint8_t *storage, uint32_t storage_len)
 {
     int ret = -1;
 
     if (storage && storage_len > 0) {
         SEL4LOGI("optee: import storage\n");
-        ret = optee_import_storage(storage, storage_len);
+        ret = optee_import_storage(tee_fd, storage, storage_len);
         if (ret)
             return ret;
     } else {
         SEL4LOGI("optee: create an empty storage\n");
     }
 
-    ret = sel4_optee_init_cmd();
+    ret = sel4_optee_init_cmd(tee_fd);
 
     return ret;
 }
 
-int sel4_optee_open_session(char **params_in_out,uint32_t *in_out_len,
+int sel4_optee_open_session(int tee_fd, char **params_in_out, uint32_t *in_out_len,
                             int32_t *tee_err, uint32_t *ta_err)
 {
     if (!params_in_out ||
@@ -379,7 +393,8 @@ int sel4_optee_open_session(char **params_in_out,uint32_t *in_out_len,
         return -EINVAL;
     }
 
-    return sel4_optee_invoke_ta(OPTEE_OPEN_SESSION,
+    return sel4_optee_invoke_ta(tee_fd,
+                                OPTEE_OPEN_SESSION,
                                 TA_CMD_NA,
                                 params_in_out,
                                 in_out_len,
@@ -387,8 +402,9 @@ int sel4_optee_open_session(char **params_in_out,uint32_t *in_out_len,
                                 ta_err);
 }
 
-int sel4_optee_close_session(char **params_in_out,uint32_t *in_out_len,
-                            int32_t *tee_err, uint32_t *ta_err)
+int sel4_optee_close_session(int tee_fd, char **params_in_out,
+                             uint32_t *in_out_len, int32_t *tee_err,
+                             uint32_t *ta_err)
 {
     if (!params_in_out ||
         !*params_in_out ||
@@ -398,7 +414,8 @@ int sel4_optee_close_session(char **params_in_out,uint32_t *in_out_len,
         return -EINVAL;
     }
 
-    return sel4_optee_invoke_ta(OPTEE_CLOSE_SESSION,
+    return sel4_optee_invoke_ta(tee_fd,
+                                OPTEE_CLOSE_SESSION,
                                 TA_CMD_NA,
                                 params_in_out,
                                 in_out_len,
@@ -406,7 +423,9 @@ int sel4_optee_close_session(char **params_in_out,uint32_t *in_out_len,
                                 ta_err);
 }
 
-int sel4_optee_invoke_cmd(uint32_t ta_cmd, char **params_in_out, uint32_t *in_out_len, int32_t *tee_err, uint32_t *ta_err)
+int sel4_optee_invoke_cmd(int tee_fd, uint32_t ta_cmd, char **params_in_out,
+                          uint32_t *in_out_len, int32_t *tee_err,
+                          uint32_t *ta_err)
 {
     if (!params_in_out ||
         !*params_in_out ||
@@ -416,7 +435,8 @@ int sel4_optee_invoke_cmd(uint32_t ta_cmd, char **params_in_out, uint32_t *in_ou
         return -EINVAL;
     }
 
-    return sel4_optee_invoke_ta(OPTEE_INVOKE,
+    return sel4_optee_invoke_ta(tee_fd,
+                                OPTEE_INVOKE,
                                 ta_cmd,
                                 params_in_out,
                                 in_out_len,
@@ -424,7 +444,10 @@ int sel4_optee_invoke_cmd(uint32_t ta_cmd, char **params_in_out, uint32_t *in_ou
                                 ta_err);
 }
 
-static int sel4_optee_export_storage_partial(uint8_t **export, uint32_t *export_len, uint32_t *storage_len, uint32_t offset)
+static int sel4_optee_export_storage_partial(int tee_fd, uint8_t **export,
+                                             uint32_t *export_len,
+                                             uint32_t *storage_len,
+                                             uint32_t offset)
 {
     int ret = -1;
     uint32_t payload_len = 0;
@@ -448,7 +471,7 @@ static int sel4_optee_export_storage_partial(uint8_t **export, uint32_t *export_
         .status_check = VERIFY_TEE_OK,
     };
 
-    ret = tty_req(&tty);
+    ret = tty_req(tee_fd, &tty);
     if (ret < 0)
         goto out;
 
@@ -482,7 +505,7 @@ out:
     return ret;
 }
 
-int sel4_optee_export_storage(uint8_t **storage, uint32_t *storage_len)
+int sel4_optee_export_storage(int tee_fd, uint8_t **storage, uint32_t *storage_len)
 {
     int ret = -1;
     uint8_t *recv_buf = NULL;
@@ -497,7 +520,11 @@ int sel4_optee_export_storage(uint8_t **storage, uint32_t *storage_len)
     }
 
     do {
-        ret = sel4_optee_export_storage_partial(&partial, &len, &export_len, offset);
+        ret = sel4_optee_export_storage_partial(tee_fd,
+                                                &partial,
+                                                &len,
+                                                &export_len,
+                                                offset);
         if (ret) {
             goto err_out;
         }

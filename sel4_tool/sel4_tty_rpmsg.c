@@ -22,7 +22,7 @@
 
 #define SEL4TTY "/dev/ttyRPMSG6"
 
-static int open_tty(void)
+int sel4_open_tty()
 {
     int fd = 0;
     struct termios tty = {0};
@@ -31,7 +31,7 @@ static int open_tty(void)
     if(fd <= 0)
     {
         SEL4LOGE("failed to open %s: %d\n", SEL4TTY, errno);
-        return -EIO;
+        return -errno;
     }
 
     /* From https://github.com/polarfire-soc/polarfire-soc-linux-examples/
@@ -44,6 +44,17 @@ static int open_tty(void)
     tcsetattr(fd, TCSANOW, &tty);     /* write attributes */
 
     return fd;
+}
+
+void sel4_close_tty(int fd)
+{
+
+    if (fd < 1) {
+        SEL4LOGE("invalid file: %d\n", fd);
+        return;
+    }
+
+    close(fd);
 }
 
 static int tty_read_resp(int tty_fd, struct tty_msg *tty)
@@ -118,24 +129,17 @@ err_out:
     return err;
 }
 
-int tty_req(struct tty_msg *tty)
+int tty_req(int tty_fd, struct tty_msg *tty)
 {
-    int tty_fd = -1;
     ssize_t ret = -1;
 
     struct ree_tee_hdr *hdr = NULL;
 
-    if (!tty) {
+    if (tty_fd < 1 || !tty) {
         SEL4LOGE("ERROR: invalid parameters\n");
         return -EINVAL;
     }
 
-    tty_fd = open_tty();
-    if (tty_fd <= 0)
-    {
-        ret = -EIO;
-        goto err_out;
-    }
 
     for (int i = 0; i < TTY_SEND_BUF_COUNT; i++) {
         /* skip empty buffers */
