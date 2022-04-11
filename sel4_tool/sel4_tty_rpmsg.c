@@ -26,11 +26,26 @@ int sel4_open_tty()
 {
     int fd = 0;
     struct termios tty = {0};
+    int err = -1;
+
+    struct flock file_lock = {
+        .l_type = F_WRLCK,
+        .l_whence = SEEK_SET,
+        .l_start = 0,
+        .l_len = 0,
+    };
 
     fd = open(SEL4TTY, O_RDWR | O_NOCTTY);
     if(fd <= 0)
     {
         SEL4LOGE("failed to open %s: %d\n", SEL4TTY, errno);
+        return -errno;
+    }
+
+    /* try to lock tty file */
+    err = fcntl(fd, F_OFD_SETLK, &file_lock);
+    if (err) {
+        SEL4LOGE("fcntl error: %d\n", errno);
         return -errno;
     }
 
@@ -48,10 +63,26 @@ int sel4_open_tty()
 
 void sel4_close_tty(int fd)
 {
+    int err = -1;
+
+    struct flock file_unlock = {
+        .l_type = F_UNLCK,
+        .l_whence = SEEK_SET,
+        .l_start = 0,
+        .l_len = 0,
+
+    };
 
     if (fd < 1) {
         SEL4LOGE("invalid file: %d\n", fd);
         return;
+    }
+
+    /* release tty file lock */
+    err = fcntl(fd, F_OFD_SETLK, &file_unlock);
+    /* execute close() even if fcntl fails */
+    if (err) {
+        SEL4LOGE("fcntl error: %d\n", errno);
     }
 
     close(fd);

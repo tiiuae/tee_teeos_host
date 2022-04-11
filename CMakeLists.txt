@@ -28,6 +28,7 @@ add_compile_definitions(
 	SEL4LOG_ERROR			# sel4_log
 #	SEL4LOG_INFO			# sel4_log
 	TRACE_PKCS11_API_CALLS 	# pkcs11_api.c
+	_GNU_SOURCE				# F_OFD_SETLK
 )
 
 add_subdirectory(sel4_tool)
