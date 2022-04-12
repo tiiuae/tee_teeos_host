@@ -23,7 +23,7 @@
 #define CRASHLOG_SIZE           0x2000      /* from devicetree */
 #define CRASHLOG_PA             0xA2450000  /* from devicetree */
 
-#define STORAGE_IMPORT_MSG_LEN  0x4000      /* 16kB */
+#define STORAGE_IMPORT_MSG_LEN  32752   /* 32kB - header - aligment */
 
 typedef int sync_spinlock_t; /* seL4 spinlock */
 
