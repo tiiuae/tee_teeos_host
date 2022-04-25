@@ -16,16 +16,18 @@
 #include "sel4_circ.h"
 #include "ree_tee_msg.h"
 #include "sel4_tty_rpmsg.h"
-
+#include "sel4_tool_cmdline.h"
 #include "sel4_log.h"
 
 #define DEVMEM_HANDLE           "/dev/mem"  /* For reading crashmem */
+#define OPTEE_STORAGE           "/hdd/sstorage/optee_ram_image.bin"
 #define CRASHLOG_SIZE           0x2000      /* from devicetree */
 #define CRASHLOG_PA             0xA2450000  /* from devicetree */
 
 #define STORAGE_IMPORT_MSG_LEN  32752   /* 32kB - header - aligment */
 
 typedef int sync_spinlock_t; /* seL4 spinlock */
+static uint32_t storage_counter;
 
 /* memory structure in the beginning of crashlog area */
 struct crashlog_hdr {
@@ -243,8 +245,8 @@ static int sel4_optee_invoke_ta(int tee_fd,
         ret = -ENOMEM;
         goto out;
     }
-
     memcpy(params_out, resp->cmd.params, out_len);
+    storage_counter = resp->cmd.fs_counter;
 
     /* return out buffer */
     free(*params_in_out);
@@ -312,7 +314,7 @@ static int optee_import_storage(int tee_fd, uint8_t *storage, uint32_t storage_l
     do {
         import_len = MIN(storage_len - pos, STORAGE_IMPORT_MSG_LEN);
 
-        ret = sel4_optee_import_storage_partial(tee_fd, 
+        ret = sel4_optee_import_storage_partial(tee_fd,
                                                 storage + pos,
                                                 import_len,
                                                 storage_len);
@@ -406,6 +408,10 @@ int sel4_optee_close_session(int tee_fd, char **params_in_out,
                              uint32_t *in_out_len, int32_t *tee_err,
                              uint32_t *ta_err)
 {
+    int err;
+    uint8_t *memory_buffer = NULL;
+    uint32_t len = 0;
+
     if (!params_in_out ||
         !*params_in_out ||
         !in_out_len ||
@@ -414,13 +420,28 @@ int sel4_optee_close_session(int tee_fd, char **params_in_out,
         return -EINVAL;
     }
 
-    return sel4_optee_invoke_ta(tee_fd,
+    err = sel4_optee_invoke_ta(tee_fd,
                                 OPTEE_CLOSE_SESSION,
                                 TA_CMD_NA,
                                 params_in_out,
                                 in_out_len,
                                 tee_err,
                                 ta_err);
+    if (err)
+        return err;
+
+    if (storage_counter) {
+        err = sel4_optee_export_storage(tee_fd, &memory_buffer, &len);
+        if (err) {
+            SEL4LOGE("%s: ERROR: Optee storage export failed: %d\n", __FUNCTION__, err);
+            return err;
+        }
+        err = sel4_tool_save_file(OPTEE_STORAGE, memory_buffer, len);
+        if (err) {
+            SEL4LOGE("%s: ERROR: Optee storage save to filesystem failed: %d\n", __FUNCTION__, err);
+        }
+    }
+    return err;
 }
 
 int sel4_optee_invoke_cmd(int tee_fd, uint32_t ta_cmd, char **params_in_out,
