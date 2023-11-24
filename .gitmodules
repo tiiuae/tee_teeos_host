@@ -1,4 +1,4 @@
 [submodule "optee_client"]
 	path = optee_client
 	url = https://github.com/tiiuae/optee_optee_client.git
-	branch = platsec_dev
+	branch = platsec_3.17.0
